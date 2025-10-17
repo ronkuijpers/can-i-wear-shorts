@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wordclock Dashboard</title>
+  <title>Can I Wear Shorts Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
   <div class="max-w-xl mx-auto p-4">
     <header class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-3xl font-bold">🕒 Wordclock Dashboard</h1>
-        <p class="text-sm text-gray-600">Easily manage your smart clock</p>
+        <h1 class="text-3xl font-bold">🩳 Can I Wear Shorts Dashboard</h1>
+        <p class="text-sm text-gray-600">Manage your weather-driven outfit indicator</p>
       </div>
       <div class="flex items-center gap-4">
         <a href="/mqtt.html" class="text-sm text-blue-600 hover:underline">MQTT</a>
@@ -34,7 +34,67 @@
       </div>
     </section>
 
-    
+    <section class="bg-white p-4 rounded-2xl shadow mb-4">
+      <h2 class="text-xl font-semibold mb-2">Locatie</h2>
+      <p class="text-sm text-gray-600 mb-3">
+        Gebruik een stad of adres om de juiste coördinaten vast te leggen voor de weerinformatie.
+      </p>
+      <div class="space-y-3">
+        <div>
+          <label for="locationName" class="block text-sm font-medium text-gray-700">Omschrijving (stad/adres)</label>
+          <input id="locationName" type="text" class="mt-1 w-full border rounded p-2 text-sm" placeholder="Bijv. Amsterdam, NL" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="locationLatitude" class="block text-sm font-medium text-gray-700">Latitude</label>
+            <input id="locationLatitude" type="text" class="mt-1 w-full border rounded p-2 text-sm" placeholder="52.3702" />
+          </div>
+          <div>
+            <label for="locationLongitude" class="block text-sm font-medium text-gray-700">Longitude</label>
+            <input id="locationLongitude" type="text" class="mt-1 w-full border rounded p-2 text-sm" placeholder="4.8952" />
+          </div>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button id="saveLocationBtn" class="py-2 px-4 rounded bg-blue-600 text-white hover:bg-blue-700">Locatie opslaan</button>
+          <span id="locationStatus" class="text-sm text-gray-600"></span>
+        </div>
+        <div id="locationSummary" class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2"></div>
+      </div>
+    </section>
+
+    <section class="bg-white p-4 rounded-2xl shadow mb-4">
+      <h2 class="text-xl font-semibold mb-2">Weer</h2>
+      <p id="weatherStatus" class="text-sm text-gray-600 mb-2">Nog geen weerdata opgehaald.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Temperatuur</p>
+          <p id="weatherTemperature" class="font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Wind</p>
+          <p id="weatherWind" class="font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Windrichting</p>
+          <p id="weatherWindDir" class="font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Laatste update</p>
+          <p id="weatherUpdated" class="font-semibold">-</p>
+        </div>
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Outfit nu</p>
+          <p id="outfitNow" class="font-semibold">-</p>
+          <p id="outfitNowDetail" class="text-xs text-gray-500"></p>
+        </div>
+        <div class="bg-gray-50 p-2 rounded">
+          <p class="text-gray-500">Outfit vandaag</p>
+          <p id="outfitToday" class="font-semibold">-</p>
+          <p id="outfitTodayDetail" class="text-xs text-gray-500"></p>
+        </div>
+      </div>
+    </section>
+
     <section class="bg-white p-4 rounded-2xl shadow mb-4">
       <h2 class="text-xl font-semibold mb-2">Color</h2>
       <input type="color" id="colorPicker" class="w-full h-12 rounded p-0 border-2" />
@@ -194,7 +254,7 @@
       document.getElementById('statusIndicator').className =
         'inline-block w-4 h-4 rounded-full ' + (on ? 'bg-green-500' : 'bg-red-500');
       const st = document.getElementById('statusText');
-      if (st) st.textContent = on ? 'Wordclock on' : 'Wordclock off';
+      if (st) st.textContent = on ? 'Device active' : 'Device off';
     };
 
     document.getElementById('toggleClockOn').onclick = () => {
@@ -211,6 +271,281 @@
     const brightnessInput = document.getElementById('brightnessInput');
     const brightnessDec = document.getElementById('brightnessDec');
     const brightnessInc = document.getElementById('brightnessInc');
+    const locationNameInput = document.getElementById('locationName');
+    const locationLatInput = document.getElementById('locationLatitude');
+    const locationLonInput = document.getElementById('locationLongitude');
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    const locationStatus = document.getElementById('locationStatus');
+    const locationSummary = document.getElementById('locationSummary');
+    const weatherStatus = document.getElementById('weatherStatus');
+    const weatherTemp = document.getElementById('weatherTemperature');
+    const weatherWind = document.getElementById('weatherWind');
+    const weatherWindDir = document.getElementById('weatherWindDir');
+    const weatherUpdated = document.getElementById('weatherUpdated');
+    const outfitNow = document.getElementById('outfitNow');
+    const outfitNowDetail = document.getElementById('outfitNowDetail');
+    const outfitToday = document.getElementById('outfitToday');
+    const outfitTodayDetail = document.getElementById('outfitTodayDetail');
+    const setLocationStatus = (msg) => {
+      if (locationStatus) locationStatus.textContent = msg || '';
+    };
+    const FIXED_TIMEZONE = 'Europe/Amsterdam';
+    const escapeHtml = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let weatherInterval = null;
+
+    const setOutfit = (mode, label, detail = '') => {
+      if (mode === 'today') {
+        if (outfitToday) outfitToday.textContent = label;
+        if (outfitTodayDetail) outfitTodayDetail.textContent = detail;
+      } else {
+        if (outfitNow) outfitNow.textContent = label;
+        if (outfitNowDetail) outfitNowDetail.textContent = detail;
+      }
+    };
+
+    const clearOutfits = (message = '') => {
+      setOutfit('now', '-', message);
+      setOutfit('today', '-', message);
+    };
+
+    const clearWeather = (message = '') => {
+      if (weatherTemp) weatherTemp.textContent = '-';
+      if (weatherWind) weatherWind.textContent = '-';
+      if (weatherWindDir) weatherWindDir.textContent = '-';
+      if (weatherUpdated) weatherUpdated.textContent = '-';
+      if (weatherStatus) weatherStatus.textContent = message || 'Nog geen weerdata opgehaald.';
+      clearOutfits(message);
+    };
+
+    clearWeather();
+
+    const topLabels = {
+      short_sleeve: 'Korte mouwen',
+      long_sleeve: 'Lange mouwen'
+    };
+    const bottomLabels = {
+      shorts: 'Korte broek',
+      long_pants: 'Lange broek'
+    };
+
+    const formatOutfitLabel = (top, bottom) => {
+      const topText = topLabels[top] || top || '-';
+      const bottomText = bottomLabels[bottom] || bottom || '-';
+      return `${topText} & ${bottomText}`;
+    };
+
+    const formatOutfitDetail = (payload) => {
+      if (!payload) return '';
+      const med = Number.isFinite(payload.temp_median) ? `${payload.temp_median.toFixed(1)}°C` : '-';
+      const min = Number.isFinite(payload.temp_min) ? `${payload.temp_min.toFixed(1)}°C` : '-';
+      const rain = Number.isFinite(payload.rain_probability) ? `${Math.round(payload.rain_probability)}%` : '-';
+      const hours = payload.hours ? `${payload.hours}u` : '';
+      const parts = [`T_med ${med}`, `T_min ${min}`, `Regen ${rain}`];
+      if (hours) parts.push(hours);
+      return parts.join(' · ');
+    };
+
+    const renderOutfit = (mode, payload) => {
+      if (!payload) {
+        setOutfit(mode, '-', '');
+        return;
+      }
+      const label = formatOutfitLabel(payload.top, payload.bottom);
+      const detail = formatOutfitDetail(payload);
+      setOutfit(mode, label, detail);
+    };
+
+    const loadOutfit = async (mode, { showStatus = false } = {}) => {
+      try {
+        const res = await fetch(`/api/outfit?mode=${encodeURIComponent(mode)}`);
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const msg = data && data.message ? data.message : 'Geen outfitadvies.';
+          setOutfit(mode, '-', showStatus ? msg : '');
+          return;
+        }
+        renderOutfit(mode, data);
+      } catch (err) {
+        setOutfit(mode, '-', showStatus ? 'Advies ophalen mislukt.' : '');
+      }
+    };
+
+    const renderWeather = (payload) => {
+      if (typeof payload.temperature === 'number' && weatherTemp) {
+        weatherTemp.textContent = `${payload.temperature.toFixed(1)} °C`;
+      } else if (weatherTemp) {
+        weatherTemp.textContent = '-';
+      }
+      if (typeof payload.windspeed === 'number' && weatherWind) {
+        weatherWind.textContent = `${payload.windspeed.toFixed(1)} km/h`;
+      } else if (weatherWind) {
+        weatherWind.textContent = '-';
+      }
+      if (typeof payload.winddirection === 'number' && weatherWindDir) {
+        weatherWindDir.textContent = `${Math.round(payload.winddirection)}°`;
+      } else if (weatherWindDir) {
+        weatherWindDir.textContent = '-';
+      }
+      if (payload.time && weatherUpdated) {
+        weatherUpdated.textContent = payload.time;
+      } else if (weatherUpdated) {
+        weatherUpdated.textContent = '-';
+      }
+      if (weatherStatus) {
+        if (payload.message && payload.message !== 'OK') {
+          weatherStatus.textContent = payload.message;
+        } else {
+          weatherStatus.textContent = 'Weerdata bijgewerkt';
+        }
+      }
+    };
+
+    const loadWeather = async ({ showStatus = true } = {}) => {
+      if (!weatherStatus) return;
+      if (showStatus) weatherStatus.textContent = 'Weerdata ophalen…';
+      try {
+        const res = await fetch('/api/weather');
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          clearWeather(data.message || 'Weerdata ophalen mislukt');
+          return;
+        }
+        renderWeather(data);
+        await Promise.all([
+          loadOutfit('now', { showStatus: false }),
+          loadOutfit('today', { showStatus: false })
+        ]);
+      } catch (err) {
+        clearWeather('Weerdata ophalen mislukt');
+      }
+    };
+
+    const startWeatherPolling = () => {
+      if (weatherInterval) clearInterval(weatherInterval);
+      weatherInterval = setInterval(() => loadWeather({ showStatus: false }), 5 * 60 * 1000);
+    };
+
+    const renderLocationSummary = (loc) => {
+      if (!locationSummary) return;
+      if (!loc || (!loc.latitude && !loc.longitude)) {
+        locationSummary.textContent = 'Geen locatie opgeslagen.';
+        clearWeather();
+        return;
+      }
+      const parts = [];
+      if (loc.name) {
+        parts.push(`<strong>${escapeHtml(loc.name)}</strong>`);
+      }
+      parts.push(`Lat: ${escapeHtml(loc.latitude)}`);
+      parts.push(`Lon: ${escapeHtml(loc.longitude)}`);
+      locationSummary.innerHTML = parts.join('<br>');
+    };
+
+    const lookupLocationByName = async (query, { showStatus = true } = {}) => {
+      const name = (query || '').trim();
+      if (!name) return null;
+      try {
+        if (showStatus) setLocationStatus('Zoeken naar coördinaten...');
+        const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`;
+        const geoRes = await fetch(geoUrl, { headers: { 'Accept': 'application/json' } });
+        if (!geoRes.ok) throw new Error('Nominatim HTTP ' + geoRes.status);
+        const geoData = await geoRes.json();
+        if (!Array.isArray(geoData) || geoData.length === 0) {
+          if (showStatus) setLocationStatus('Geen locatie gevonden voor deze invoer.');
+          return null;
+        }
+        const latVal = Number.parseFloat(geoData[0].lat);
+        const lonVal = Number.parseFloat(geoData[0].lon);
+        if (Number.isNaN(latVal) || Number.isNaN(lonVal)) {
+          if (showStatus) setLocationStatus('Kon numerieke coördinaten niet bepalen.');
+          return null;
+        }
+        const lat = latVal.toFixed(5);
+        const lon = lonVal.toFixed(5);
+        const resolvedName = geoData[0].name || name;
+        if (locationLatInput) locationLatInput.value = lat;
+        if (locationLonInput) locationLonInput.value = lon;
+        if (locationNameInput) locationNameInput.value = resolvedName;
+        if (showStatus) setLocationStatus('');
+        return { lat, lon, name: resolvedName };
+      } catch (err) {
+        if (showStatus) setLocationStatus('Locatie lookup mislukt. Controleer de ingevoerde stad.');
+        return null;
+      }
+    };
+
+    const loadLocation = async () => {
+      try {
+        const res = await fetch('/api/location');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const loc = await res.json();
+        if (locationNameInput) locationNameInput.value = loc.name || '';
+        if (locationLatInput) locationLatInput.value = loc.latitude || '';
+        if (locationLonInput) locationLonInput.value = loc.longitude || '';
+        renderLocationSummary(loc);
+        if (loc && loc.latitude && loc.longitude) {
+          await loadWeather({ showStatus: false });
+        } else {
+          clearWeather();
+        }
+      } catch (err) {
+        setLocationStatus('Kon locatie niet laden');
+        renderLocationSummary(null);
+        clearWeather('Geen locatie beschikbaar.');
+      }
+    };
+
+    if (locationNameInput) {
+      const triggerLookup = async () => {
+        const query = locationNameInput.value.trim();
+        if (!query) return;
+        await lookupLocationByName(query, { showStatus: true });
+      };
+      locationNameInput.addEventListener('blur', triggerLookup);
+      locationNameInput.addEventListener('change', triggerLookup);
+    }
+
+    if (saveLocationBtn) {
+      saveLocationBtn.addEventListener('click', async () => {
+        const name = locationNameInput ? locationNameInput.value.trim() : '';
+        if (!name) {
+          setLocationStatus('Vul eerst een stad of adres in.');
+          return;
+        }
+        let lat = locationLatInput ? locationLatInput.value.trim() : '';
+        let lon = locationLonInput ? locationLonInput.value.trim() : '';
+        let displayName = name;
+        if (!lat || !lon) {
+          const lookup = await lookupLocationByName(name, { showStatus: true });
+          if (!lookup) return;
+          lat = lookup.lat;
+          lon = lookup.lon;
+          displayName = lookup.name;
+        }
+        const body = new URLSearchParams({
+          name: displayName,
+          latitude: lat,
+          longitude: lon
+        });
+        try {
+          setLocationStatus('Locatie opslaan...');
+          const res = await fetch('/api/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+          });
+          if (!res.ok) {
+            const msg = await res.text();
+            throw new Error(msg || ('HTTP ' + res.status));
+          }
+          await res.json();
+          await loadLocation();
+          setLocationStatus('Locatie opgeslagen.');
+        } catch (err) {
+          setLocationStatus('Opslaan mislukt: ' + err.message);
+        }
+      });
+    }
     let brightnessTimer = null;
     const sendBrightnessDebounced = (val) => {
       if (brightnessTimer) clearTimeout(brightnessTimer);
@@ -260,7 +595,7 @@
       });
     }
     document.getElementById('restartBtn').onclick = () => {
-      if (confirm('Restart Wordclock?')) fetch('/restart');
+      if (confirm('Restart Can I Wear Shorts?')) fetch('/restart');
     };
     document.getElementById('resetWifiBtn').onclick = () => {
       if (confirm('Reset WiFi?')) fetch('/resetwifi');
@@ -356,6 +691,9 @@
         if (i) i.value = val;
         if (lbl) lbl.textContent = val;
       });
+
+    loadLocation();
+    startWeatherPolling();
 
     // Load firmware version
     fetch('/version').then(r => r.text()).then(v => {

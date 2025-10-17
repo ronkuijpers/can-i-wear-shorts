@@ -15,7 +15,7 @@
 - Activeer Link Time Optimization en controleer build-flags om firmwaregrootte te reduceren (PlatformIO `platformio.ini`).
 
 ## Maintainability
-- Normaliseer resterende Nederlandstalige logregels / UI-strings naar Engels (`src/wordclock.cpp`, `src/web_routes.h`).
+- Normaliseer resterende Nederlandstalige logregels / UI-strings naar Engels (`src/clothing_display.cpp`, `src/web_routes.h`).
 - Documenteer kernconfiguratie en ranges in `src/config.h` (korte comments bij defines).
 - UI Files worden elke nacht en restart gepulld. Werkt version check niet?
 

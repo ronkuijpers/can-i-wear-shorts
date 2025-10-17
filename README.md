@@ -1,6 +1,6 @@
-# Wordclock Firmware
+# Can I Wear Shorts – Firmware
 
-Firmware for an ESP32-based Wordclock with OTA updates, a web interface, and pixel-LED time display.
+Firmware for an ESP32-based LED display that advises what kind of clothing to wear today, driven by the local weather forecast. The project started life as the Wordclock firmware and is currently being refactored towards weather-aware clothing guidance.
 
 ## Status
 
@@ -8,13 +8,14 @@ Firmware for an ESP32-based Wordclock with OTA updates, a web interface, and pix
 > Functionality is incomplete and unstable.  
 > Use at your own risk.
 
-## Features
+## Features (current & planned)
 
 - WiFi setup via WiFiManager
 - OTA firmware updates
 - Web-based dashboard and admin interface
-- Telnet logging
-- NeoPixel LED word clock
+- Telnet-style logging over serial
+- NeoPixel LED matrix control
+- Weather ingestion and clothing recommendation pipeline (WIP)
 
 ## Installation & Hardware
 
@@ -33,25 +34,18 @@ Requirements:
 
 ## Usage
 
-After installation, the clock is accessible via the local network. Use the web dashboard for settings, updates, and status.
+After installation, the device is accessible via the local network. Use the web dashboard for settings, updates and (soon) weather-driven advice.
 
 ## Project Structure & Modules
 
-The firmware is modularly built. Main modules include:
+The repository still mirrors the original Wordclock layout; the ongoing refactor will gradually replace clock-specific modules with weather and clothing advice logic. Key entry points today:
 
-- `main.cpp`: Central setup and loop, invokes all modules.
-- `network_init.h`: WiFi initialization via WiFiManager.
-- `ota_init.h`: Over-the-air updates (OTA).
-- `time_sync.h`: Time synchronization via NTP.
-- `webserver_init.h`: Web server and route initialization.
-- `mqtt_init.h`: MQTT initialization and event loop.
-- `display_init.h`: LED and display settings.
-- `startup_sequence_init.h`: Startup animation.
-- `wordclock_main.h`: Main logic of the clock.
-- `wordclock_system_init.h`: UI authentication and word clock setup.
-- `grid_layout.cpp`: Grid layout definitions (multiple variants) and lookup helpers.
-
-Refer to the comments in each module file for explanations of functionality and usage.
+- `main.cpp`: Core setup/loop that wires together networking, OTA, web UI and LED control.
+- `network_init.h`, `ota_init.h`, `time_sync.h`: Connectivity helpers.
+- `webserver_init.h`, `web_routes.h`: Embedded web dashboard and REST API (subject to redesign).
+- `mqtt_init.h`, `mqtt_client.*`: Optional MQTT integration, to be re-targeted for clothing advice data.
+- `display_init.h`, `led_controller.*`, `led_state.*`: LED hardware abstraction.
+- Legacy display modules (`clothing_display.*`, `grid_layout.*`, `time_mapper.*`) – slated for replacement by weather/clothing components.
 
 ## Documentation
 
@@ -59,17 +53,12 @@ Refer to the comments in each module file for explanations of functionality and 
 - [QuickStart.md](docs/QuickStart.md): Quick Start Guide
 - [todo](docs/todo): Pending and completed tasks
 
-## Grid Variants
+## Roadmap
 
-The firmware supports multiple LED-letter layouts. Each variant is defined in `src/grid_layout.cpp`
-and uses a language/version code such as `NL_V1` or `EN_V1`. To add or adjust a layout, provide the
-letter rows, word positions, and minute LED indices for the relevant variant. The active variant is
-stored in NVS and can be selected via the admin UI (`/admin`) or programmatically with
-`displaySettings.setGridVariant(...)`.
-
-## Todo's & Roadmap
-
-See [docs/todo](docs/todo) for current and completed tasks.
+- Replace the legacy text-mapping logic with weather ingestion (`weather_client`) and decision engine (`clothing_advisor`).
+- Introduce new LED layout and animations tailored to clothing categories.
+- Refresh the web dashboard with weather status, thresholds and manual override controls.
+- Update OTA feeds and documentation once the new behaviour is stable.
 
 ## License
 

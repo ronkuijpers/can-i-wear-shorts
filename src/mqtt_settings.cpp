@@ -20,7 +20,7 @@ bool mqtt_settings_load(MqttSettings& out) {
     out.user = "";
     out.pass = "";
     out.discoveryPrefix = "homeassistant";
-    out.baseTopic = "wordclock";
+    out.baseTopic = "can_i_wear_shorts";
     p.end();
     return false; // not persisted yet
   }
@@ -30,7 +30,7 @@ bool mqtt_settings_load(MqttSettings& out) {
   out.user = p.getString("user", "");
   out.pass = p.getString("pass", "");
   out.discoveryPrefix = p.getString("disc", "homeassistant");
-  out.baseTopic = p.getString("base", "wordclock");
+  out.baseTopic = p.getString("base", "can_i_wear_shorts");
   p.end();
   return true;
 }

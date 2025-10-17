@@ -7,7 +7,7 @@
 #include "led_state.h"
 #include "log.h"
 #include "ota_updater.h"
-#include "wordclock.h"
+#include "clothing_display.h"
 #include "time_mapper.h"
 #include "sequence_controller.h"
 #include "mqtt_settings.h"
@@ -48,6 +48,11 @@ static const unsigned long RECONNECT_DELAY_MIN_MS = 2000;
 static const unsigned long RECONNECT_DELAY_MAX_MS = 60000;
 static unsigned long reconnectDelayMs = RECONNECT_DELAY_MIN_MS;
 static uint8_t reconnectAttempts = 0;
+static const char* ERR_NOT_CONFIGURED = "MQTT not configured";
+
+static bool hasMqttConfig() {
+  return g_mqttCfg.host.length() > 0 && g_mqttCfg.port != 0;
+}
 
 static void buildTopics() {
   base = g_mqttCfg.baseTopic;
@@ -370,8 +375,8 @@ static bool mqtt_connect() {
     g_lastErr = "WiFi not connected";
     return false;
   }
-  if (g_mqttCfg.host.length() == 0 || g_mqttCfg.port == 0) {
-    g_lastErr = "MQTT not configured";
+  if (!hasMqttConfig()) {
+    g_lastErr = ERR_NOT_CONFIGURED;
     logInfo("MQTT connect skipped: no broker configured");
     return false; // not configured yet
   }
@@ -380,7 +385,7 @@ static bool mqtt_connect() {
   if (uniqId.isEmpty()) {
     uint8_t mac[6]; WiFi.macAddress(mac);
     char buf[13]; snprintf(buf, sizeof(buf), "%02X%02X%02X%02X%02X%02X", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-    uniqId = String("wordclock_") + buf;
+    uniqId = String("ciws_") + buf;
     buildTopics();
   }
 
@@ -444,6 +449,13 @@ void mqtt_begin() {
 
 void mqtt_loop() {
   if (!mqtt.connected()) {
+    if (!hasMqttConfig()) {
+      g_connected = false;
+      g_lastErr = ERR_NOT_CONFIGURED;
+      reconnectAttempts = 0;
+      reconnectDelayMs = RECONNECT_DELAY_MIN_MS;
+      return;
+    }
     unsigned long now = millis();
     if (now - lastReconnectAttempt >= reconnectDelayMs) {
       lastReconnectAttempt = now;

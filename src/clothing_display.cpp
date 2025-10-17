@@ -1,4 +1,4 @@
-#include "wordclock.h"
+#include "clothing_display.h"
 #include "time_mapper.h"
 #include "led_state.h"
 #include "grid_layout.h"
@@ -40,13 +40,13 @@ static void resetNoTimeIndicator() {
   g_noTimeIndicatorLeds.clear();
 }
 
-void wordclock_setup() {
+void clothingDisplaySetup() {
   // ledState.begin() is initialized in main
   initLeds();
-  logInfo("Wordclock setup complete");
+  logInfo("Can I Wear Shorts legacy display setup complete");
 }
 
-void wordclock_loop() {
+void clothingDisplayLoop() {
   static bool animating = false;
   static unsigned long lastStepAt = 0;
   static int animStep = 0;
@@ -208,7 +208,7 @@ void wordclock_loop() {
   showLeds(indices);
 }
 
-void wordclock_force_animation_for_time(struct tm* timeinfo) {
+void clothingDisplayForceAnimationForTime(struct tm* timeinfo) {
   if (!timeinfo) return;
   g_forcedTime = *timeinfo;
   g_forceAnim = true;

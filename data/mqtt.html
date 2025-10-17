@@ -66,7 +66,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium mb-1" for="basetopic">Base topic (device)</label>
-          <input id="basetopic" type="text" placeholder="wordclock" class="w-full border rounded p-2" />
+          <input id="basetopic" type="text" placeholder="can_i_wear_shorts" class="w-full border rounded p-2" />
           <p class="help">Used as prefix for all states/commands.</p>
         </div>
       </div>
@@ -104,7 +104,7 @@
         qs('user').value = j.user || '';
         // do not show password; leave it empty
         qs('discovery').value = j.discovery || 'homeassistant';
-        qs('basetopic').value = j.base || 'wordclock';
+        qs('basetopic').value = j.base || 'can_i_wear_shorts';
         // load status
         const s = await fetch('/api/mqtt/status');
         const sj = await s.json();

@@ -2,13 +2,13 @@
 #include "mqtt_init.h"
 #include "display_init.h"
 #include "startup_sequence_init.h"
-#include "wordclock_main.h"
+#include "clothing_display_loop.h"
 #include "time_sync.h"
-#include "wordclock_system_init.h"
+#include "clothing_system_init.h"
 
-// Wordclock hoofdprogramma
+// Can I Wear Shorts hoofdprogramma (voorlopig nog met legacy clothing-display loop)
 // - Setup: initialiseert hardware, netwerk, OTA, filesystem en start services
-// - Loop: verwerkt webrequests, OTA, MQTT en kloklogica
+// - Loop: verwerkt webrequests, OTA, MQTT en de huidige LED-logica
 
 #include <Arduino.h>
 #include <ESPmDNS.h>
@@ -20,7 +20,7 @@
 #include <time.h>
 #include <ArduinoOTA.h>
 #include <WebServer.h>
-#include "wordclock.h"
+#include "clothing_display.h"
 #include "web_routes.h"
 #include "network_init.h"
 #include "log.h"
@@ -28,6 +28,7 @@
 #include "ota_init.h"
 #include "sequence_controller.h"
 #include "display_settings.h"
+#include "weather_settings.h"
 #include "ui_auth.h"
 #include "mqtt_client.h"
 
@@ -59,8 +60,9 @@ void setup() {
     logError("❌ mDNS start failed");
   }
 
-  // Load persisted display settings (e.g. auto-update preference) before running dependent flows
+  // Load persisted display and weather settings before running dependent flows
   displaySettings.begin();
+  weatherSettings.begin();
 
   // Mount SPIFFS filesystem
   if (!FS_IMPL.begin(true)) {
@@ -95,7 +97,7 @@ void setup() {
   // Synchroniseer tijd via NTP
   initTimeSync(TZ_INFO, NTP_SERVER1, NTP_SERVER2);
   initDisplay();
-  initWordclockSystem(uiAuth);
+  initClothingSystem(uiAuth);
   initStartupSequence(startupSequence);
 }
 
@@ -110,12 +112,12 @@ void loop() {
     return;  // Voorkomt dat klok al tijd toont
   }
 
-  // Tijd- en animatie-update (wordclock_loop regelt zelf per-minuut/animatie)
+  // Tijd- en animatie-update (clothingDisplayLoop regelt zelf per-minuut/animatie)
   static unsigned long lastLoop = 0;
   unsigned long now = millis();
   if (now - lastLoop >= 50) {
     lastLoop = now;
-    runWordclockLoop();
+    runClothingDisplayLoop();
 
     // Dagelijkse firmwarecheck om 02:00
     struct tm timeinfo;

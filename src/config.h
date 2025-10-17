@@ -10,8 +10,9 @@
 #define DATA_PIN 4
 #define DEFAULT_BRIGHTNESS 5
 
-#define CLOCK_NAME "Wordclock"
-#define AP_NAME "Wordclock_AP"
+#define CLOCK_NAME "Can I Wear Shorts"
+#define AP_NAME "CanIWearShorts_AP"
+#define OTA_HOSTNAME "can-i-wear-shorts"
 #define OTA_PORT 3232
 
 // Time
@@ -25,7 +26,7 @@
 #define WIFI_CONFIG_PORTAL_TIMEOUT 180 // seconds
 #define WIFI_CONNECT_MAX_RETRIES 20
 #define WIFI_CONNECT_RETRY_DELAY_MS 500
-#define MDNS_HOSTNAME "wordclock"
+#define MDNS_HOSTNAME "can-i-wear-shorts"
 #define MDNS_START_DELAY_MS 1000
 
 #define OTA_UPDATE_COMPLETE_DELAY_MS 1000
@@ -38,4 +39,3 @@
 constexpr unsigned long SWEEP_STEP_MS = 20;
 constexpr unsigned long IP_STEP_MS = 1000;
 constexpr uint16_t IP_ZERO_O_LED_INDEX = 56;
-

@@ -9,7 +9,7 @@ struct MqttSettings {
   String user;   // optional
   String pass;   // optional
   String discoveryPrefix = "homeassistant";
-  String baseTopic = "wordclock";
+  String baseTopic = "can_i_wear_shorts";
 };
 
 // Load from Preferences. If nothing stored, prefill from secrets.h macros if present.
@@ -17,4 +17,3 @@ bool mqtt_settings_load(MqttSettings& out);
 
 // Save to Preferences (persist across reboots)
 bool mqtt_settings_save(const MqttSettings& in);
-

@@ -17,9 +17,16 @@
 #include "config.h"
 #include "display_settings.h"
 #include "ui_auth.h"
-#include "wordclock.h"
+#include "clothing_display.h"
 #include "mqtt_settings.h"
 #include "mqtt_client.h"
+#include "weather_settings.h"
+#include "weather_client.h"
+#include "clothing_advisor.h"
+#include <math.h>
+#include <time.h>
+
+static constexpr const char* kFixedTimezone = "Europe/Amsterdam";
 
 
 // References to global variables
@@ -64,7 +71,7 @@ static bool ensureUiAuth() {
   }
   // Basic Auth with dynamic UI creds
   if (!server.authenticate(uiAuth.getUser().c_str(), uiAuth.getPass().c_str())) {
-    server.requestAuthentication(BASIC_AUTH, "Wordclock UI");
+    server.requestAuthentication(BASIC_AUTH, "Can I Wear Shorts UI");
     return false;
   }
   // Force password change flow (only for UI user, not admin)
@@ -174,7 +181,7 @@ void setupWebRoutes() {
   server.on("/changepw.html", HTTP_GET, []() {
     // Only require Basic Auth, no redirect to itself
     if (!server.authenticate(uiAuth.getUser().c_str(), uiAuth.getPass().c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "Wordclock UI");
+      server.requestAuthentication(BASIC_AUTH, "Can I Wear Shorts UI");
       return;
     }
     serveFile("/changepw.html", "text/html");
@@ -182,7 +189,7 @@ void setupWebRoutes() {
 
   // Logout endpoints: return 401 to clear Basic Auth in browser
   server.on("/logout", HTTP_GET, []() {
-    server.sendHeader("WWW-Authenticate", "Basic realm=\"Wordclock UI\"");
+    server.sendHeader("WWW-Authenticate", "Basic realm=\"Can I Wear Shorts UI\"");
     server.send(401, "text/plain", "Logged out. Close the tab or log in again.");
   });
   server.on("/adminlogout", HTTP_GET, []() {
@@ -193,7 +200,7 @@ void setupWebRoutes() {
   // Handle password change
   server.on("/setUIPassword", HTTP_POST, []() {
     if (!server.authenticate(uiAuth.getUser().c_str(), uiAuth.getPass().c_str())) {
-      server.requestAuthentication(BASIC_AUTH, "Wordclock UI");
+      server.requestAuthentication(BASIC_AUTH, "Can I Wear Shorts UI");
       return;
     }
     if (!server.hasArg("new") || !server.hasArg("confirm")) {
@@ -231,6 +238,123 @@ void setupWebRoutes() {
   server.on("/update.html", HTTP_GET, []() {
     if (!ensureUiAuth()) return;
     serveFile("/update.html", "text/html");
+  });
+
+  // Weather location settings (protected)
+  server.on("/api/location", HTTP_GET, []() {
+    if (!ensureUiAuth()) return;
+    JsonDocument doc;
+    String name = weatherSettings.getLocationName();
+    String lat = weatherSettings.getLatitude();
+    String lon = weatherSettings.getLongitude();
+    doc["name"] = name;
+    doc["latitude"] = lat;
+    doc["longitude"] = lon;
+    doc["timezone"] = kFixedTimezone;
+    doc["provider"] = WEATHER_PROVIDER;
+    doc["endpoint"] = WEATHER_API_ENDPOINT;
+    time_t now = time(nullptr);
+    struct tm timeinfo;
+    if (localtime_r(&now, &timeinfo)) {
+      char buf[32];
+      if (strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &timeinfo)) {
+        doc["currentTime"] = String(buf);
+      }
+      long gmtoff = 0;
+      struct tm gm;
+      if (gmtime_r(&now, &gm)) {
+        gmtoff = (long)difftime(mktime(&timeinfo), mktime(&gm));
+      }
+      doc["utc_offset"] = gmtoff;
+      bool isDst = (timeinfo.tm_isdst > 0);
+      doc["dst"] = isDst;
+      doc["abbreviation"] = String(isDst ? "CEST" : "CET");
+    }
+    String out;
+    serializeJson(doc, out);
+    server.send(200, "application/json", out);
+  });
+
+  server.on("/api/location", HTTP_POST, []() {
+    if (!ensureUiAuth()) return;
+    String name = server.hasArg("name") ? server.arg("name") : "";
+    String lat = server.hasArg("latitude") ? server.arg("latitude") : "";
+    String lon = server.hasArg("longitude") ? server.arg("longitude") : "";
+    lat.trim(); lon.trim();
+    if (lat.length() == 0 || lon.length() == 0) {
+      server.send(400, "text/plain", "latitude and longitude are required");
+      return;
+    }
+    weatherSettings.setLocation(name, lat, lon);
+    JsonDocument doc;
+    doc["ok"] = true;
+    doc["name"] = weatherSettings.getLocationName();
+    doc["latitude"] = weatherSettings.getLatitude();
+    doc["longitude"] = weatherSettings.getLongitude();
+    doc["timezone"] = kFixedTimezone;
+    String out;
+    serializeJson(doc, out);
+    server.send(200, "application/json", out);
+  });
+
+  server.on("/api/weather", HTTP_GET, []() {
+    if (!ensureUiAuth()) return;
+    JsonDocument doc;
+    WeatherData data;
+    String msg;
+    bool ok = weatherGetData(data, msg);
+    doc["ok"] = ok && data.valid;
+    if (data.timeIso.length()) doc["time"] = data.timeIso;
+    if (!isnan(data.temperatureC)) doc["temperature"] = data.temperatureC;
+    if (!isnan(data.windspeed)) doc["windspeed"] = data.windspeed;
+    if (!isnan(data.winddirection)) doc["winddirection"] = data.winddirection;
+    if (data.weathercode >= 0) doc["weathercode"] = data.weathercode;
+    if (data.fetchedAtMs != 0) doc["fetched_at_ms"] = data.fetchedAtMs;
+    if (!msg.isEmpty()) doc["message"] = msg;
+    String out;
+    serializeJson(doc, out);
+    server.send((ok && data.valid) ? 200 : 503, "application/json", out);
+  });
+
+  server.on("/api/outfit", HTTP_GET, []() {
+    if (!ensureUiAuth()) return;
+    String mode = server.hasArg("mode") ? server.arg("mode") : "now";
+    WeatherData data;
+    String msg;
+    bool ok = weatherGetData(data, msg);
+    JsonDocument doc;
+    if (!ok || !data.valid) {
+      doc["ok"] = false;
+      doc["message"] = msg.length() ? msg : "Geen weerdata beschikbaar.";
+      String out;
+      serializeJson(doc, out);
+      server.send(503, "application/json", out);
+      return;
+    }
+
+    OutfitRecommendation rec;
+    String adviseMsg;
+    if (!computeOutfitRecommendation(data, mode, rec, adviseMsg)) {
+      doc["ok"] = false;
+      if (!adviseMsg.isEmpty()) doc["message"] = adviseMsg;
+      String out;
+      serializeJson(doc, out);
+      server.send(503, "application/json", out);
+      return;
+    }
+
+    doc["ok"] = true;
+    doc["mode"] = rec.mode;
+    doc["top"] = rec.top;
+    doc["bottom"] = rec.bottom;
+    doc["temp_median"] = rec.tempMedian;
+    doc["temp_min"] = rec.tempMin;
+    doc["rain_probability"] = rec.rainProbability;
+    doc["hours"] = rec.sampleCount;
+    doc["message"] = adviseMsg;
+    String out;
+    serializeJson(doc, out);
+    server.send(200, "application/json", out);
   });
 
   // MQTT settings page (protected)
@@ -317,7 +441,7 @@ void setupWebRoutes() {
       WiFiClient mc;
       PubSubClient tmp(mc);
       tmp.setServer(host.c_str(), port);
-      String cid = String("wordclock_test_") + String(millis());
+      String cid = String("ciws_test_") + String(millis());
       bool ok = tmp.connect(cid.c_str(), user.c_str(), pass.c_str());
       if (!ok) {
         int st = tmp.state();
@@ -482,7 +606,7 @@ void setupWebRoutes() {
           <meta http-equiv='refresh' content='5;url=/' />
         </head>
         <body>
-          <h1>Wordclock is restarting...</h1>
+          <h1>Can I Wear Shorts is restarting...</h1>
           <p>You will be redirected to the dashboard in 5 seconds.</p>
         </body>
       </html>
@@ -501,7 +625,7 @@ void setupWebRoutes() {
         </head>
         <body>
           <h1>Resetting WiFi...</h1>
-          <p>WiFi settings will be cleared. You may need to reconnect to the 'Wordclock' access point.</p>
+          <p>WiFi settings will be cleared. You may need to reconnect to the 'CanIWearShorts_AP' access point.</p>
         </body>
       </html>
     )rawliteral");
@@ -714,7 +838,7 @@ void setupWebRoutes() {
     } else {
       if (!getLocalTime(&t)) { server.send(200, "text/plain", "OK"); return; }
     }
-    wordclock_force_animation_for_time(&t);
+    clothingDisplayForceAnimationForTime(&t);
   logInfo(String("🛒 Sell time ") + (on ? "ON (10:47)" : "OFF"));
     server.send(200, "text/plain", "OK");
   });

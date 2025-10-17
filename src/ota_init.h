@@ -8,7 +8,7 @@
 // This function configures and starts the OTA service to allow firmware updates over the network.
 // Callback functions provide logging and proper handling of the update process.
 inline void initOTA() {
-    ArduinoOTA.setHostname(CLOCK_NAME); // Set OTA hostname
+    ArduinoOTA.setHostname(OTA_HOSTNAME); // Set OTA hostname
     ArduinoOTA.setPassword(OTA_PASSWORD); // Set OTA password
     ArduinoOTA.setPort(OTA_PORT); // Set OTA port
 
